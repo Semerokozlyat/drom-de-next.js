@@ -4,47 +4,65 @@ import {
   CustomersTableType,
   InvoiceForm,
   InvoicesTable,
-  LatestInvoiceRaw,
+  LatestInvoice,
   Revenue,
 } from './definitions';
 import { formatCurrency } from './utils';
 
 export async function fetchRevenue() {
+  'use server';
+
   try {
     // Artificially delay a response for demo purposes.
     // Don't do this in production :)
 
     // console.log('Fetching revenue data...');
     // await new Promise((resolve) => setTimeout(resolve, 3000));
-
-    const data = await sql<Revenue>`SELECT * FROM revenue`;
-
     // console.log('Data fetch completed after 3 seconds.');
 
-    return data.rows;
+    // TODO: now this data is fetched from mocked (local) json-server.
+    // TODO: Need to use real backend API endpoint from Go app.
+    // TODO: use TanStack here for API requests.
+    const response = await fetch("http://localhost:8000/revenue",
+        {
+          method: "GET",
+          headers: {},
+          body: null,
+        }
+    );
+
+    const data = await response.json();
+    const revenueData = data.map( (dataItem: Revenue) => (
+        {month: dataItem.month, revenue: dataItem.revenue}
+    ));
+    return revenueData;
   } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch revenue data.');
+    console.error('Backend API request error:', error);
+    throw new Error('Failed to fetch revenue data from backend API.');
   }
 }
 
-export async function fetchLatestInvoices() {
+export async function fetchLatestInvoices()  {
   try {
-    const data = await sql<LatestInvoiceRaw>`
-      SELECT invoices.amount, customers.name, customers.image_url, customers.email, invoices.id
-      FROM invoices
-      JOIN customers ON invoices.customer_id = customers.id
-      ORDER BY invoices.date DESC
-      LIMIT 5`;
+    // TODO: now this data is fetched from mocked (local) json-server.
+    // TODO: Need to use real backend API endpoint from Go app.
+    // TODO: use TanStack here for API requests.
+    const invoicesResp = await fetch("http://localhost:8000/invoices",
+        {method: "GET"},
+    );
+    const invoicesData = await invoicesResp.json();
+    const customersResp = await fetch("http://localhost:8000/customers",
+        {method: "GET"},
+    );
+    const customersData = await customersResp.json();
 
-    const latestInvoices = data.rows.map((invoice) => ({
-      ...invoice,
-      amount: formatCurrency(invoice.amount),
-    }));
+    const latestInvoices: LatestInvoice[] = customersData.map( (customer: CustomersTableType) => (
+        {id: "123",name: customer.name, image_url: customer.image_url, email: customer.email, amount: "55Euro"}
+    ));
     return latestInvoices;
   } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch the latest invoices.');
+    console.error('Backend API request error:', error);
+    throw new Error('Failed to fetch latest invoices data from backend API.');
   }
 }
 

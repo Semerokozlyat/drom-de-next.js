@@ -18,3 +18,9 @@ build-frontend:
 
 .PHONY: run-app
 run-app: run-backend run-frontend
+
+# Front-end development environment commands
+
+.PHONY: test-api-server
+test-api-server:
+	cd ./ui/drom-de-nextjs && json-server --watch ./app/lib/placeholder-data.json --port 8000
