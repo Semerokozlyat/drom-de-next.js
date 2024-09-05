@@ -16,9 +16,8 @@ export async function fetchRevenue() {
     // Artificially delay a response for demo purposes.
     // Don't do this in production :)
 
-    // console.log('Fetching revenue data...');
-    // await new Promise((resolve) => setTimeout(resolve, 3000));
-    // console.log('Data fetch completed after 3 seconds.');
+    console.log('Fetching revenue data...');
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     // TODO: now this data is fetched from mocked (local) json-server.
     // TODO: Need to use real backend API endpoint from Go app.
@@ -30,6 +29,8 @@ export async function fetchRevenue() {
           body: null,
         }
     );
+
+    console.log('Data fetch completed after 3 seconds.');
 
     const data = await response.json();
     const revenueData = data.map( (dataItem: Revenue) => (
@@ -68,26 +69,20 @@ export async function fetchLatestInvoices()  {
 
 export async function fetchCardData() {
   try {
-    // You can probably combine these into a single SQL query
-    // However, we are intentionally splitting them to demonstrate
-    // how to initialize multiple queries in parallel with JS.
-    const invoiceCountPromise = sql`SELECT COUNT(*) FROM invoices`;
-    const customerCountPromise = sql`SELECT COUNT(*) FROM customers`;
-    const invoiceStatusPromise = sql`SELECT
-         SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) AS "paid",
-         SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END) AS "pending"
-         FROM invoices`;
+    const invoicesResp = await fetch("http://localhost:8000/invoices",
+        {method: "GET"},
+    );
+    const invoicesData = await invoicesResp.json();
 
-    const data = await Promise.all([
-      invoiceCountPromise,
-      customerCountPromise,
-      invoiceStatusPromise,
-    ]);
+    const customersResp = await fetch("http://localhost:8000/customers",
+        {method: "GET"},
+    );
+    const customersData = await customersResp.json();
 
-    const numberOfInvoices = Number(data[0].rows[0].count ?? '0');
-    const numberOfCustomers = Number(data[1].rows[0].count ?? '0');
-    const totalPaidInvoices = formatCurrency(data[2].rows[0].paid ?? '0');
-    const totalPendingInvoices = formatCurrency(data[2].rows[0].pending ?? '0');
+    const numberOfInvoices = Number(12 ?? '0');
+    const numberOfCustomers = Number(11 ?? '0');
+    const totalPaidInvoices = formatCurrency(17625 ?? '0');  // normally should be requested from backend API with filter
+    const totalPendingInvoices = formatCurrency(6753 ?? '0');  // normally should be requested from backend API with filter
 
     return {
       numberOfCustomers,
