@@ -101,31 +101,27 @@ export async function fetchFilteredInvoices(
   query: string,
   currentPage: number,
 ) {
-  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+  const offset = (currentPage - 1) * ITEMS_PER_PAGE;  // here page number form the pagination is converted to the offset API argument
 
   try {
-    const invoices = await sql<InvoicesTable>`
-      SELECT
-        invoices.id,
-        invoices.amount,
-        invoices.date,
-        invoices.status,
-        customers.name,
-        customers.email,
-        customers.image_url
-      FROM invoices
-      JOIN customers ON invoices.customer_id = customers.id
-      WHERE
-        customers.name ILIKE ${`%${query}%`} OR
-        customers.email ILIKE ${`%${query}%`} OR
-        invoices.amount::text ILIKE ${`%${query}%`} OR
-        invoices.date::text ILIKE ${`%${query}%`} OR
-        invoices.status ILIKE ${`%${query}%`}
-      ORDER BY invoices.date DESC
-      LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
-    `;
+    // TODO: the "query" and "currentPage" must be sent to backend API as query parameters to support filtering on the server side
 
-    return invoices.rows;
+    // TODO: now this data is fetched from mocked (local) json-server.
+    // TODO: Need to use real backend API endpoint from Go app.
+    // TODO: use TanStack here for API requests.
+    const invoicesResp = await fetch("http://localhost:8000/invoices",
+        {method: "GET"},
+    );
+    const invoicesData = await invoicesResp.json();
+    const customersResp = await fetch("http://localhost:8000/customers",
+        {method: "GET"},
+    );
+    const customersData = await customersResp.json();
+
+    const filteredInvoices: InvoicesTable[] = customersData.map( (customer: CustomersTableType) => (
+        {id: "123",name: customer.name, image_url: customer.image_url, email: customer.email, status: "paid", date: invoicesData[1].date, amount: 775}
+    ));
+    return filteredInvoices;
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to fetch invoices.');
@@ -134,18 +130,8 @@ export async function fetchFilteredInvoices(
 
 export async function fetchInvoicesPages(query: string) {
   try {
-    const count = await sql`SELECT COUNT(*)
-    FROM invoices
-    JOIN customers ON invoices.customer_id = customers.id
-    WHERE
-      customers.name ILIKE ${`%${query}%`} OR
-      customers.email ILIKE ${`%${query}%`} OR
-      invoices.amount::text ILIKE ${`%${query}%`} OR
-      invoices.date::text ILIKE ${`%${query}%`} OR
-      invoices.status ILIKE ${`%${query}%`}
-  `;
-
-    const totalPages = Math.ceil(Number(count.rows[0].count) / ITEMS_PER_PAGE);
+    const totalCount = 30;  // normally this number is received from backend API by "query" filter provided in the argument.
+    const totalPages = Math.ceil(Number(totalCount) / ITEMS_PER_PAGE);
     return totalPages;
   } catch (error) {
     console.error('Database Error:', error);
