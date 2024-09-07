@@ -141,23 +141,17 @@ export async function fetchInvoicesPages(query: string) {
 
 export async function fetchInvoiceById(id: string) {
   try {
-    const data = await sql<InvoiceForm>`
-      SELECT
-        invoices.id,
-        invoices.customer_id,
-        invoices.amount,
-        invoices.status
-      FROM invoices
-      WHERE invoices.id = ${id};
-    `;
+    const invoiceResp = await fetch("http://localhost:8000/invoices?id="+id,
+        {method: "GET"},
+    );
+    const invoiceData = await invoiceResp.json();
+    // TODO: now this data is fetched from mocked (local) json-server.
+    // TODO: Need to use real backend API endpoint from Go app.
+    // TODO: use TanStack here for API requests.
+    const invoiceForm: InvoiceForm = { id: invoiceData.id, customer_id: "5464", amount: 500000, status: "pending" }
+    invoiceForm.amount = invoiceForm.amount / 100;  // convert from cents.
 
-    const invoice = data.rows.map((invoice) => ({
-      ...invoice,
-      // Convert amount from cents to dollars
-      amount: invoice.amount / 100,
-    }));
-
-    return invoice[0];
+    return invoiceForm;
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to fetch invoice.');
@@ -166,16 +160,15 @@ export async function fetchInvoiceById(id: string) {
 
 export async function fetchCustomers() {
   try {
-    const data = await sql<CustomerField>`
-      SELECT
-        id,
-        name
-      FROM customers
-      ORDER BY name ASC
-    `;
+    const customersResp = await fetch("http://localhost:8000/customers",
+        {method: "GET"},
+    );
+    const customersData = await customersResp.json();
 
-    const customers = data.rows;
-    return customers;
+    const filteredCustomers: CustomerField[] = customersData.map( (customer: CustomersTableType) => (
+      {is: customer.id, name: customer.name}
+    ));
+    return filteredCustomers;
   } catch (err) {
     console.error('Database Error:', err);
     throw new Error('Failed to fetch all customers.');
