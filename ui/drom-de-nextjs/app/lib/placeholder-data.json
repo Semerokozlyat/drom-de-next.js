@@ -139,9 +139,9 @@
     },
     {
       "id": "123",
-      "amount": 1111222200,
-      "customer_id": "Michael Novotny",
-      "date": "2024-09-07",
+      "amount": 112200,
+      "customer_id": "Balazs Orban",
+      "date": "2024-09-09",
       "status": "paid"
     }
   ],

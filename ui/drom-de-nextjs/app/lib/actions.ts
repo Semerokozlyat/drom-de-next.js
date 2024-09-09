@@ -27,14 +27,19 @@ export async function createInvoice(formData: FormData) {
     const date = new Date().toISOString().split('T')[0];
     // TODO: Create it in real backend API
     const invoiceObj: Invoice = {amount: amountInCents, customer_id: customerId, date: date, id: "123", status: status};
-    const postResp = await fetch("http://localhost:8000/invoices",
-        {
-            method: "POST",
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(invoiceObj),
-        },
-    );
-    const _ = await postResp.json();
+
+    try{
+        const postResp = await fetch("http://localhost:8000/invoices",
+            {
+                method: "POST",
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(invoiceObj),
+            },
+        );
+        const _ = await postResp.json();
+    } catch (error) {
+        return {message: 'Backend API Error: failed to create invoice'};
+    }
 
     revalidatePath('/dashboard/invoices');  // means clear the client cache on this path to render newly added invoices.
     redirect('/dashboard/invoices');
@@ -53,19 +58,28 @@ export async function updateInvoice(id: string, formData: FormData) {
     // TODO: here should be API request to backend API like:
     // PUT /dashboard/invoices ....
     // TODO: implement with real backend
+    try {
+
+    } catch (error) {
+        return {message: 'Backend API Error: failed to update invoice'};
+    }
 
     revalidatePath('/dashboard/invoices');
     redirect('/dashboard/invoices');
 }
 
 export async function deleteInvoice(id: string) {
-    const delResp = await fetch("http://localhost:8000/invoices/"+id,
-        {
-            method: "DELETE",
-            headers: {},
-            body: null,
-        },
-    );
-    const _ = await delResp.json();
+    // throw new Error('Failed to delete invoice!');
+    try {
+        const delResp = await fetch("http://localhost:8000/invoices/",
+            {
+                method: "DELETE",
+            },
+        );
+        const _ = await delResp.json();
+    } catch (error) {
+        return {message: 'Backend API Error: failed to delete invoice'};
+    }
+
     revalidatePath('/dashboard/invoices');
 }
