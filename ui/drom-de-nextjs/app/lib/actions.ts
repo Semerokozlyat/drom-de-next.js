@@ -5,28 +5,58 @@ import { Invoice } from '@/app/lib/definitions';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
+// State object represents the state of the form - to be preserved for validation.
+export type State = {
+    errors?: {
+        customerId?: string[];
+        amount?: string[];
+        status?: string[];
+    };
+    message?: string | null;
+};
+
 // We create schema for the form action that fully complies our Invoice type, defined in the definitions.ts
 const FormSchema = z.object({
     id: z.string(),
-    customerId: z.string(),
-    amount: z.coerce.number(),  // course means read string and set number
-    status: z.enum(['pending', 'paid']),
+    customerId: z.string({
+        invalid_type_error: 'Please select a customer.',  // error message for the form validation
+    }),
+    amount: z.coerce.number().gt(0, { message: 'Please enter an amount greater than $0.' }),  // course means read string and set number + form validation constraint: .gt
+    status: z.enum(['pending', 'paid'], {
+        invalid_type_error: 'Please select an invoice status.',    // error message for the form validation
+    }),
     date: z.string(),
 });
 
 const CreateInvoice = FormSchema.omit({ id: true, date: true });
 
-export async function createInvoice(formData: FormData) {
+export async function createInvoice(prevState: State, formData: FormData) {
     const rawFormData = {
         customerId: formData.get('customerId'),
         amount: formData.get('amount'),
         status: formData.get('status'),
     };
-    const { customerId, amount, status } = CreateInvoice.parse(rawFormData);
+    const validatedFields = CreateInvoice.safeParse(rawFormData);  // "safeParse" is used to enable fields validation as per defined constraints.
+    // If form validation fails, return errors early. Otherwise, continue.
+    if (!validatedFields.success) {
+        return {
+            errors: validatedFields.error.flatten().fieldErrors,
+            message: 'Missing Fields. Failed to Create Invoice.',
+        };
+    }
+
+    // Prepare data for sending to the Backend API
+    const { customerId, amount, status } = validatedFields.data;
     const amountInCents = amount * 100;
     const date = new Date().toISOString().split('T')[0];
-    // TODO: Create it in real backend API
-    const invoiceObj: Invoice = {amount: amountInCents, customer_id: customerId, date: date, id: "123", status: status};
+    // TODO: Send create (POST) request to the real backend API
+    const invoiceObj: Invoice = {
+        amount: amountInCents,
+        customer_id: customerId,
+        date: date,
+        id: "123",
+        status: status,
+    };
 
     try{
         const postResp = await fetch("http://localhost:8000/invoices",
@@ -49,6 +79,7 @@ export async function createInvoice(formData: FormData) {
 const UpdateInvoice = FormSchema.omit({ id: true, date: true });
 
 export async function updateInvoice(id: string, formData: FormData) {
+    // TODO: add form validation via safeParse as it is done for "createInvoice" action and "create-form.tsx"
     const { customerId, amount, status } = UpdateInvoice.parse({
         customerId: formData.get('customerId'),
         amount: formData.get('amount'),

@@ -8,6 +8,11 @@ run-backend:
 
 # Front-end app commands
 
+.PHONY: lint-frontend
+lint-frontend:
+	cd ./ui/drom-de-nextjs && pnpm lint
+
+
 .PHONY: run-frontend
 run-frontend:
 	cd ./ui/drom-de-nextjs && pnpm run dev
